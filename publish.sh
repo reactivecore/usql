@@ -6,6 +6,6 @@ source ~/bin/java17.sh
 
 read -p "Press enter to continue"
 
-sbt publishSigned
+sbt publishSigned sonatypeBundleRelease
 
 
