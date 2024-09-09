@@ -95,18 +95,20 @@ object Macros {
     val tree   = TypeRepr.of[T]
     val symbol = tree.typeSymbol
 
-    // TODO: That doesn't work yet (caseField.annotations is always empty), however https://august.nagro.us/read-annotations-from-macro.html has a working approach
+    // Note: symbol.caseFields.map(_.annotations) does not work, but using the primaryConstructor works
+    // Also see https://august.nagro.us/read-annotations-from-macro.html
 
     Expr.ofList(
-      symbol.caseFields.map { caseField =>
-        caseField.annotations.collectFirst {
-          case term if (term.tpe <:< TypeRepr.of[ColumnName]) =>
-            term.asExprOf[ColumnName]
-        } match {
-          case None    => '{ None }
-          case Some(e) => '{ Some(${ e }) }
+      symbol.primaryConstructor.paramSymss.flatten
+        .map { sym =>
+          sym.annotations.collectFirst {
+            case term if (term.tpe <:< TypeRepr.of[ColumnName]) =>
+              term.asExprOf[ColumnName]
+          } match {
+            case None    => '{ None }
+            case Some(e) => '{ Some(${ e }) }
+          }
         }
-      }
     )
   }
 }
