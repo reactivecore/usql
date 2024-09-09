@@ -21,6 +21,15 @@ trait SqlColumnar[T] {
 }
 
 object SqlColumnar {
+
+  /**
+   * Derive an instance for a case class.
+   *
+   * Use [[ColumnName]] to control column names.
+   *
+   * @param nm
+   *   name mapping strategy.
+   */
   inline def derived[T <: Product: Mirror.ProductOf](using nm: NameMapping = NameMapping.Default): SqlColumnar[T] =
     Macros.buildColumnar[T]
 
