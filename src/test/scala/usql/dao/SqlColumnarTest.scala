@@ -20,4 +20,16 @@ class SqlColumnarTest extends TestBase {
     tabular.columns shouldBe SqlIdentifiers.fromStrings("name", "age")
     tabular.tableName shouldBe SqlIdentifier.fromString("sample")
   }
+
+  @TableName("samplename")
+  case class SampleWithAnnotations(
+      @ColumnName("my_name") name: String,
+      age: Int
+  )
+
+  it should "work with annotations" in {
+    val tabular = SqlTabular.derived[SampleWithAnnotations]
+    tabular.tableName shouldBe SqlIdentifier.fromString("samplename")
+    tabular.columns shouldBe SqlIdentifiers.fromStrings("my_name", "age")
+  }
 }

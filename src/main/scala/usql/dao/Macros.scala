@@ -1,6 +1,6 @@
 package usql.dao
 
-import usql.{ParameterFiller, ResultRowDecoder, SqlIdentifiers}
+import usql.{ParameterFiller, ResultRowDecoder, SqlIdentifier, SqlIdentifiers}
 
 import scala.compiletime.{erasedValue, summonInline}
 import scala.deriving.Mirror
@@ -11,8 +11,13 @@ object Macros {
       using nm: NameMapping,
       mirror: Mirror.ProductOf[T]
   ): SqlColumnar.SimpleColumnar[T] = {
-    val labels          = deriveLabels[T]
-    val columnNames     = usql.SqlIdentifiers(labels.map(nm.columnToSql).toVector)
+    val labels            = deriveLabels[T]
+    val columnAnnotations = columnNameAnnotations[T]
+    val columnNames       = SqlIdentifiers(labels.zip(columnAnnotations).map {
+      case (_, Some(annotation)) => SqlIdentifier.fromString(annotation.name)
+      case (label, _)            => nm.columnToSql(label)
+    })
+
     val rowDecoder      = summonInline[ResultRowDecoder[mirror.MirroredElemTypes]].map(mirror.fromTuple)
     val parameterFiller =
       summonInline[ParameterFiller[mirror.MirroredElemTypes]].contraMap[T](x => Tuple.fromProductTyped(x)(using mirror))
@@ -24,10 +29,18 @@ object Macros {
   }
 
   inline def buildTabular[T <: Product](using nm: NameMapping, mirror: Mirror.ProductOf[T]): SqlTabular[T] = {
-    val name     = typeName[T]
     val columnar = buildColumnar[T]
+
+    val tableName: SqlIdentifier = tableNameAnnotation[T]
+      .map { tn =>
+        SqlIdentifier.fromString(tn.name)
+      }
+      .getOrElse {
+        nm.caseClassToTableName(typeName[T])
+      }
+
     SqlTabular.SimpleTabular(
-      tableName = nm.caseClassToTableName(name),
+      tableName = tableName,
       columnar.columns,
       columnar.rowDecoder,
       columnar.parameterFiller
@@ -52,5 +65,48 @@ object Macros {
       case _: EmptyTuple => Nil
       case _: (t *: ts)  => summonInline[ValueOf[t]].value.asInstanceOf[String] :: summonLabels[ts]
     }
+  }
+
+  /** Extract table name annotation for the type. */
+  inline def tableNameAnnotation[T]: Option[TableName] = {
+    ${ tableNameAnnotationImpl[T] }
+  }
+
+  def tableNameAnnotationImpl[T](using quotes: Quotes, t: Type[T]): Expr[Option[TableName]] = {
+    import quotes.reflect.*
+    val tree   = TypeRepr.of[T]
+    val symbol = tree.typeSymbol
+    symbol.annotations.collectFirst {
+      case term if (term.tpe <:< TypeRepr.of[TableName]) =>
+        term.asExprOf[TableName]
+    } match {
+      case None    => '{ None }
+      case Some(e) => '{ Some(${ e }) }
+    }
+  }
+
+  /** Extract column name annotations for each column. */
+  inline def columnNameAnnotations[T]: List[Option[ColumnName]] = {
+    ${ columnNameAnnotationsImpl[T] }
+  }
+
+  def columnNameAnnotationsImpl[T](using quotes: Quotes, t: Type[T]): Expr[List[Option[ColumnName]]] = {
+    import quotes.reflect.*
+    val tree   = TypeRepr.of[T]
+    val symbol = tree.typeSymbol
+
+    // TODO: That doesn't work yet (caseField.annotations is always empty), however https://august.nagro.us/read-annotations-from-macro.html has a working approach
+
+    Expr.ofList(
+      symbol.caseFields.map { caseField =>
+        caseField.annotations.collectFirst {
+          case term if (term.tpe <:< TypeRepr.of[ColumnName]) =>
+            term.asExprOf[ColumnName]
+        } match {
+          case None    => '{ None }
+          case Some(e) => '{ Some(${ e }) }
+        }
+      }
+    )
   }
 }
