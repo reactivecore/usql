@@ -1,6 +1,6 @@
 package usql.dao
 
-import usql.{SqlIdentifier, SqlIdentifiers}
+import usql.{SqlIdentifier, SqlIdentifiers, dao}
 import usql.profiles.BasicProfile.given
 import usql.util.TestBase
 
@@ -31,5 +31,22 @@ class SqlColumnarTest extends TestBase {
     val tabular = SqlTabular.derived[SampleWithAnnotations]
     tabular.tableName shouldBe SqlIdentifier.fromString("samplename")
     tabular.columns shouldBe SqlIdentifiers.fromStrings("my_name", "age")
+  }
+
+  case class Nested(
+      x: Double,
+      y: Double
+  ) derives SqlColumnar
+
+  case class WithNested(
+      a: Nested,
+      b: Nested
+  ) derives dao.SqlTabular
+
+  it should "work for nested" in {
+    val tabular = SqlTabular.derived[WithNested]
+    tabular.parameterFiller.cardinality shouldBe 4
+    tabular.rowDecoder.cardinality shouldBe 4
+    tabular.columns shouldBe SqlIdentifiers.fromStrings("x", "y", "x", "y")
   }
 }

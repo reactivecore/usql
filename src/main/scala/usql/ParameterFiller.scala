@@ -1,5 +1,7 @@
 package usql
 
+import usql.dao.SqlColumnar
+
 import java.sql.PreparedStatement
 
 /** Responsible for filling arguments into prepared statements for batch operations. */
@@ -51,4 +53,6 @@ object ParameterFiller {
 
     override def cardinality: Int = 1
   }
+
+  given forColumnar[T](using c: SqlColumnar[T]): ParameterFiller[T] = c.parameterFiller
 }
