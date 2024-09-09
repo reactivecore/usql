@@ -1,6 +1,6 @@
 package usql.dao
 
-import usql.{ParameterFiller, ResultRowDecoder, SqlIdentifier, SqlIdentifiers}
+import usql.{DataType, ParameterFiller, ResultRowDecoder, SqlIdentifier, SqlIdentifiers}
 
 import scala.compiletime.{erasedValue, summonInline}
 import scala.deriving.Mirror
@@ -87,10 +87,10 @@ object Macros {
 
   /** Extract column name annotations for each column. */
   inline def columnNameAnnotations[T]: List[Option[ColumnName]] = {
-    ${ columnNameAnnotationsImpl[T] }
+    ${ fieldAnnotationExtractor[ColumnName, T] }
   }
 
-  def columnNameAnnotationsImpl[T](using quotes: Quotes, t: Type[T]): Expr[List[Option[ColumnName]]] = {
+  def fieldAnnotationExtractor[A, T](using quotes: Quotes, t: Type[T], a: Type[A]): Expr[List[Option[A]]] = {
     import quotes.reflect.*
     val tree   = TypeRepr.of[T]
     val symbol = tree.typeSymbol
@@ -102,8 +102,8 @@ object Macros {
       symbol.primaryConstructor.paramSymss.flatten
         .map { sym =>
           sym.annotations.collectFirst {
-            case term if (term.tpe <:< TypeRepr.of[ColumnName]) =>
-              term.asExprOf[ColumnName]
+            case term if (term.tpe <:< TypeRepr.of[A]) =>
+              term.asExprOf[A]
           } match {
             case None    => '{ None }
             case Some(e) => '{ Some(${ e }) }

@@ -39,7 +39,9 @@ class SqlColumnarTest extends TestBase {
   ) derives SqlColumnar
 
   case class WithNested(
+      @ColumnGroup(prefix = "p_")
       a: Nested,
+      @ColumnGroup(suffix = "_s")
       b: Nested
   ) derives dao.SqlTabular
 
@@ -47,6 +49,6 @@ class SqlColumnarTest extends TestBase {
     val tabular = SqlTabular.derived[WithNested]
     tabular.parameterFiller.cardinality shouldBe 4
     tabular.rowDecoder.cardinality shouldBe 4
-    tabular.columns shouldBe SqlIdentifiers.fromStrings("x", "y", "x", "y")
+    tabular.columns shouldBe SqlIdentifiers.fromStrings("p_x", "p_y", "x_s", "y_s")
   }
 }
