@@ -1,6 +1,6 @@
 package usql.dao
 
-import usql.{DataType, ParameterFiller, ResultRowDecoder, SqlIdentifier, SqlIdentifiers}
+import usql.{ParameterFiller, ResultRowDecoder, SqlIdentifier, SqlIdentifiers}
 
 import scala.deriving.Mirror
 
@@ -15,6 +15,17 @@ trait SqlTabular[T] extends SqlColumnar[T] {
 }
 
 object SqlTabular {
+
+  /**
+   * Derive an instance for a case class.
+   *
+   * Use [[ColumnName]] to control column names.
+   *
+   * Use [[TableName]] to control table names.
+   *
+   * @param nm
+   *   name mapping strategy.
+   */
   inline def derived[T <: Product: Mirror.ProductOf](using nm: NameMapping = NameMapping.Default): SqlTabular[T] =
     Macros.buildTabular[T]
 
@@ -25,15 +36,5 @@ object SqlTabular {
       parameterFiller: ParameterFiller[T]
   ) extends SqlTabular[T] {
     override def cardinality: Int = columns.size
-  }
-}
-
-case class LazySqlTabular[T](tabular: SqlTabular[T])
-
-object LazySqlTabular {
-  inline given derived[T <: Product: Mirror.ProductOf](
-      using nm: NameMapping = NameMapping.Default
-  ): LazySqlTabular[T] = {
-    LazySqlTabular(SqlTabular.derived)
   }
 }

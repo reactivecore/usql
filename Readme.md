@@ -144,6 +144,10 @@ Try {
 
 ## Automatic DAO Objects
 
+DAO (Data Access Objects) can be created using the base classes `CrdBase` and `KeyedCrudBase`.
+
+They are using a helper description object called `SqlColumnar` and `SqlTabular`.
+
 ```scala 3
 import usql.dao.*
 
