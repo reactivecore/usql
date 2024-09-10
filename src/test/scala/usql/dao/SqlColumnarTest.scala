@@ -39,16 +39,17 @@ class SqlColumnarTest extends TestBase {
   ) derives SqlColumnar
 
   case class WithNested(
-      @ColumnGroup(prefix = "p_")
+      @ColumnGroup(pattern = "a_%c")
       a: Nested,
-      @ColumnGroup(suffix = "_s")
-      b: Nested
+      @ColumnGroup(pattern = "%c_s")
+      b: Nested,
+      c: Nested
   ) derives dao.SqlTabular
 
   it should "work for nested" in {
     val tabular = SqlTabular.derived[WithNested]
-    tabular.parameterFiller.cardinality shouldBe 4
-    tabular.rowDecoder.cardinality shouldBe 4
-    tabular.columns shouldBe SqlIdentifiers.fromStrings("p_x", "p_y", "x_s", "y_s")
+    tabular.parameterFiller.cardinality shouldBe 6
+    tabular.rowDecoder.cardinality shouldBe 6
+    tabular.columns shouldBe SqlIdentifiers.fromStrings("a_x", "a_y", "x_s", "y_s", "c_x", "c_y")
   }
 }
