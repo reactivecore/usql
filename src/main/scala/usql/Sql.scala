@@ -62,10 +62,12 @@ case class Sql(parts: Seq[(String, SqlInterpolationParameter)]) extends SqlBase 
     p
   }
 
-  override def withPreparedStatement[T](f: PreparedStatement => T)(using cp: ConnectionProvider): T = {
+  override def withPreparedStatement[T](
+      f: PreparedStatement => T
+  )(using cp: ConnectionProvider, sp: StatementPreparator): T = {
     cp.withConnection {
       val c = summon[Connection]
-      Using.resource(c.prepareStatement(sql)) { statement =>
+      Using.resource(sp.prepare(c, sql)) { statement =>
         sqlParameters.zipWithIndex.foreach { case (param, idx) =>
           param.dataType.fillByZeroBasedIdx(idx, statement, param.value)
         }

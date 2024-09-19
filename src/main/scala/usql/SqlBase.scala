@@ -1,12 +1,14 @@
 package usql
 
-import java.sql.PreparedStatement
+import java.sql.{Connection, PreparedStatement, Statement}
 
 /** Something which can create prepared statements. */
 trait SqlBase {
 
   /** Prepares a statement which can then be further filled or executed. */
-  def withPreparedStatement[T](f: PreparedStatement => T)(using cp: ConnectionProvider): T
+  def withPreparedStatement[T](
+      f: PreparedStatement => T
+  )(using cp: ConnectionProvider, prep: StatementPreparator = StatementPreparator.default): T
 
   /** Turns into a query */
   def query: Query = Query(this)
@@ -32,9 +34,33 @@ trait SqlBase {
   }
 }
 
+/** Hook for changing the preparation of SQL. */
+trait StatementPreparator {
+  def prepare(connection: Connection, sql: String): PreparedStatement
+}
+
+object StatementPreparator {
+
+  /** Default Implementation */
+  object default extends StatementPreparator {
+    override def prepare(connection: Connection, sql: String): PreparedStatement = {
+      connection.prepareStatement(sql)
+    }
+  }
+
+  /** Statement should return generated keys */
+  object withGeneratedKeys extends StatementPreparator {
+    override def prepare(connection: Connection, sql: String): PreparedStatement = {
+      connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
+    }
+  }
+}
+
 /** With supplied arguments */
 case class AppliedSql[T](base: SqlBase, parameter: T, parameterFiller: ParameterFiller[T]) extends SqlBase {
-  override def withPreparedStatement[T](f: PreparedStatement => T)(using cp: ConnectionProvider): T = {
+  override def withPreparedStatement[T](
+      f: PreparedStatement => T
+  )(using cp: ConnectionProvider, sp: StatementPreparator): T = {
     base.withPreparedStatement { ps =>
       parameterFiller.fill(ps, parameter)
       f(ps)
