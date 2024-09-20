@@ -59,6 +59,10 @@ abstract class CrdBase[T] extends Crd[T] {
   private lazy val insertStatement =
     sql"INSERT INTO ${tabular.tableName} (${tabular.columns}) VALUES (${tabular.columns.placeholders})"
 
+  override def insert(value: T)(using ConnectionProvider): Int = {
+    insertStatement.one(value).update.run()
+  }
+
   override def insert(values: Seq[T])(using ConnectionProvider): Int = {
     insertStatement.batch(values).run().sum
   }
