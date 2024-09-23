@@ -35,14 +35,16 @@ extension (sc: StringContext) {
           val replacedPart = part.stripSuffix("#") + param.dataType.serialize(param.value)
           fix(restParts, restParams, (replacedPart, SqlInterpolationParameter.Empty) :: builder)
         case (part :: restParts, (param: InnerSql) :: restParams)                              =>
-          // Innre Sql
-          val combined = param.sql.parts.toList.reverse ++ builder
-          val newParts = if (part.isEmpty) {
-            combined
+          // Inner Sql
+
+          val inner = if (part.isEmpty) {
+            Nil
           } else {
-            (part, SqlInterpolationParameter.Empty) :: combined
+            List(part -> SqlInterpolationParameter.Empty)
           }
-          fix(restParts, restParams, newParts)
+
+          val combined = param.sql.parts.toList.reverse ++ inner ++ builder
+          fix(restParts, restParams, combined)
         case (part :: restParts, param :: restParams)                                          =>
           // Regular Case
           fix(restParts, restParams, (part, param) :: builder)
@@ -62,10 +64,12 @@ case class Sql(parts: Seq[(String, SqlInterpolationParameter)]) extends SqlBase 
     p
   }
 
-  override def withPreparedStatement[T](f: PreparedStatement => T)(using cp: ConnectionProvider): T = {
+  override def withPreparedStatement[T](
+      f: PreparedStatement => T
+  )(using cp: ConnectionProvider, sp: StatementPreparator): T = {
     cp.withConnection {
       val c = summon[Connection]
-      Using.resource(c.prepareStatement(sql)) { statement =>
+      Using.resource(sp.prepare(c, sql)) { statement =>
         sqlParameters.zipWithIndex.foreach { case (param, idx) =>
           param.dataType.fillByZeroBasedIdx(idx, statement, param.value)
         }
