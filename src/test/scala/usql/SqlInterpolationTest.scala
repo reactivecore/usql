@@ -80,4 +80,18 @@ class SqlInterpolationTest extends TestBase {
       )
     )
   }
+
+  it should "also work in another case" in {
+    val inner    = sql"C = ${2}"
+    val foo      = sql"HELLO a = ${1} AND"
+    val combined = (sql"HELLO a = ${1} AND ${inner}")
+    combined shouldBe Sql(
+      Seq(
+        "HELLO a = " -> SqlParameter(1),
+        " AND "      -> Empty,
+        "C = "       -> SqlParameter(2)
+      )
+    )
+    combined.sql shouldBe "HELLO a = ? AND C = ?"
+  }
 }
