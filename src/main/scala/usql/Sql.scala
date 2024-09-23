@@ -7,7 +7,7 @@ import scala.annotation.{tailrec, targetName}
 import scala.language.implicitConversions
 import scala.util.Using
 
-implicit class SqlStringInterpolation(val sc: StringContext) extends AnyVal {
+extension (sc: StringContext) {
   def sql(parameters: SqlInterpolationParameter*): Sql = {
     Sql(fixParameters(parameters))
   }

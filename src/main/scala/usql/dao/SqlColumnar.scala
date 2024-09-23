@@ -27,6 +27,8 @@ object SqlColumnar {
    *
    * Use [[ColumnName]] to control column names.
    *
+   * Use [[ColumnGroup]] to control column names of nested column groups.
+   *
    * @param nm
    *   name mapping strategy.
    */
