@@ -100,6 +100,14 @@ val one: Option[(Int, String)] = sql"SELECT id, name FROM #${"person"} WHERE id 
 println(s"One=${one}")
 ```
 
+Encoding multiple Parameters (e.g. SQL-In-Operator):
+
+```scala 3
+val ids = Seq(1,2,3)
+val names = sql"SELECT name FROM person WHERE id IN (${SqlParameters(ids)})".query.all[String]()
+println(s"Names=${names}")
+```
+
 ## Inserts
 
 ```scala 3

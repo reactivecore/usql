@@ -1,8 +1,10 @@
 package usql.profiles
 
 import usql.DataType
+
 import java.sql.{JDBCType, PreparedStatement, ResultSet, Timestamp}
 import java.time.Instant
+import java.util
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
@@ -67,6 +69,14 @@ trait BasicProfile {
   )
 
   implicit val stringList: DataType[List[String]] = stringArray.adapt(_.toList, identity)
+
+  implicit val intArray: DataType[Seq[Int]] = arrayType.adaptWithPs(
+    _.getArray.asInstanceOf[Array[Int]].toSeq,
+    (v, ps) => {
+      val array = ps.getConnection.createArrayOf(JDBCType.INTEGER.toString, v.toArray)
+      array
+    }
+  )
 }
 
 object BasicProfile extends BasicProfile

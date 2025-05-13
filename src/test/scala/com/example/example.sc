@@ -38,6 +38,10 @@ println(s"All=${all}")
 val one: Option[(Int, String)] = sql"SELECT id, name FROM #${"person"} WHERE id = ${1}".query.one[(Int, String)]()
 println(s"One=${one}")
 
+val ids = Seq(1,2,3)
+val names = sql"SELECT name FROM person WHERE id IN (${SqlParameters(ids)})".query.all[String]()
+println(s"Names=${names}")
+
 // Inserts
 
 sql"INSERT INTO person (id, name) VALUES(?, ?)".one((3, "Charly")).update.run()
