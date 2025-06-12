@@ -60,13 +60,18 @@ trait DataType[T] {
   }
 
   /** Adapt to another type, also providing the prepared statement */
-  def adaptWithPs[U](mapFn: T => U, contraMapFn: (U, PreparedStatement) => T): DataType[U] = {
+  def adaptWithPs[U <: AnyRef](mapFn: T => U, contraMapFn: (U, PreparedStatement) => T): DataType[U] = {
     val me = this
     new DataType[U] {
       override def jdbcType: JDBCType = me.jdbcType
 
       override def extractBySqlIdx(cIdx: Int, rs: ResultSet): U = {
-        mapFn(me.extractBySqlIdx(cIdx, rs))
+        val inner = me.extractBySqlIdx(cIdx, rs)
+        if inner == null then {
+          null.asInstanceOf[U]
+        } else {
+          mapFn(me.extractBySqlIdx(cIdx, rs))
+        }
       }
 
       override def fillBySqlIdx(pIdx: Int, ps: PreparedStatement, value: U): Unit =

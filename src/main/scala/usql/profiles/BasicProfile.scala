@@ -60,23 +60,48 @@ trait BasicProfile {
     }
   }
 
-  implicit val stringArray: DataType[Seq[String]] = arrayType.adaptWithPs(
-    _.getArray.asInstanceOf[Array[String]].toSeq,
+  private def makeSeqType[T: ClassTag](jdbcType: JDBCType): DataType[Seq[T]] = arrayType.adaptWithPs[Seq[T]](
+    { array =>
+      val casted = array.getArray.asInstanceOf[Array[AnyRef]]
+      casted.map(_.asInstanceOf[T]).toSeq
+    },
     (v, ps) => {
-      val array = ps.getConnection.createArrayOf(JDBCType.VARCHAR.toString, v.toArray)
+      val javaArray = v.view.map(_.asInstanceOf[AnyRef]).toArray[AnyRef]
+      val array     = ps.getConnection.createArrayOf(jdbcType.toString, javaArray)
       array
     }
   )
 
-  implicit val stringList: DataType[List[String]] = stringArray.adapt(_.toList, identity)
+  private def makeNumberSeq[T: ClassTag](jdbcType: JDBCType, extractor: Number => T): DataType[Seq[T]] =
+    arrayType.adaptWithPs[Seq[T]](
+      { array =>
+        val casted = array.getArray.asInstanceOf[Array[AnyRef]]
+        casted.map(x => extractor(x.asInstanceOf[Number])).toSeq
+      },
+      (v, ps) => {
+        val javaArray = v.asInstanceOf[Seq[AnyRef]].toArray[AnyRef]
+        val array     = ps.getConnection.createArrayOf(jdbcType.toString, javaArray)
+        array
+      }
+    )
 
-  implicit val intArray: DataType[Seq[Int]] = arrayType.adaptWithPs(
-    _.getArray.asInstanceOf[Array[Int]].toSeq,
-    (v, ps) => {
-      val array = ps.getConnection.createArrayOf(JDBCType.INTEGER.toString, v.toArray)
-      array
-    }
-  )
+  implicit val stringSeq: DataType[Seq[String]] = makeSeqType[String](JDBCType.VARCHAR)
+
+  implicit val stringList: DataType[List[String]] = stringSeq.adapt(_.toList, identity)
+
+  implicit val intSeq: DataType[Seq[Int]] = makeSeqType[Int](JDBCType.INTEGER)
+
+  implicit val longSeq: DataType[Seq[Long]] = makeSeqType[Long](JDBCType.BIGINT)
+
+  implicit val floatSeq: DataType[Seq[Float]] = makeNumberSeq[Float](JDBCType.FLOAT, _.floatValue())
+
+  implicit val doubleSeq: DataType[Seq[Double]] = makeSeqType[Double](JDBCType.DOUBLE)
+
+  implicit val booleanSeq: DataType[Seq[Boolean]] = makeSeqType[Boolean](JDBCType.BOOLEAN)
+
+  implicit val shortSeq: DataType[Seq[Short]] = makeNumberSeq[Short](JDBCType.SMALLINT, _.shortValue())
+
+  implicit val byteSeq: DataType[Seq[Byte]] = makeNumberSeq[Byte](JDBCType.TINYINT, _.byteValue())
 }
 
 object BasicProfile extends BasicProfile
