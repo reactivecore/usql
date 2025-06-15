@@ -45,7 +45,8 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest"          % scalaTestVersion % Test,
       "org.scalatest" %% "scalatest-flatspec" % scalaTestVersion % Test,
-      "com.h2database" % "h2"                 % "2.3.232"        % Test
+      "com.h2database" % "h2"                 % "2.3.232"        % Test,
+      "org.postgresql" % "postgresql"         % "42.7.7"         % Test
     ),
     publishSettings
   )
