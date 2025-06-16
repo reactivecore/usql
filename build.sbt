@@ -31,8 +31,6 @@ def publishSettings = Seq(
   publishLocal / test     := {}
 )
 
-usePgpKeyHex("77D0E9E04837F8CBBCD56429897A43978251C225")
-
 ThisBuild / version      := artefactVersion
 ThisBuild / organization := "net.reactivecore"
 ThisBuild / scalaVersion := "3.7.1"
