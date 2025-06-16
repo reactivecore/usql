@@ -29,5 +29,6 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
+          mkdir -p ~/.sbt/1.0
           echo "credentials += Credentials(\"Sonatype Nexus Repository Manager\", \"central.sonatype.com\", sys.env.getOrElse(\"SONATYPE_USERNAME\", \"\"), sys.env.getOrElse(\"SONATYPE_PASSWORD\", \"\"))" > ~/.sbt/1.0/sonatype.sbt
           sbt clean publishSigned sonatypeBundleRelease
