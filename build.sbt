@@ -2,8 +2,12 @@ import xerial.sbt.Sonatype.GitHubHosting
 import xerial.sbt.Sonatype.sonatypeCentralHost
 
 // If there is a Tag starting with v, e.g. v0.3.0 use it as the build artefact version (e.g. 0.3.0)
-val versionTag = sys.env
-  .get("CI_COMMIT_TAG")
+val gitTag: Option[String] = sys.env.get("GITHUB_REF").flatMap { ref =>
+  if (ref.startsWith("refs/tags/")) Some(ref.stripPrefix("refs/tags/"))
+  else None
+}
+
+val versionTag = gitTag
   .filter(_.startsWith("v"))
   .map(_.stripPrefix("v"))
 
